@@ -17,7 +17,11 @@ void setup() {
   // Try to inject some true randomness, but reading an unused PIN sucks. I've observed it return the same value each time.
   // See this stackoverflow for some ideas to increase the entropy
   // https://arduino.stackexchange.com/questions/22070/powering-from-3v-coin-cell-to-vcc-using-i-o-pin-as-supply-gnd/22081#22081
-  uint8_t seed = analogRead(RANDOM_SEED_PIN);
+  // 2nd attempt is just getting the number of millis since boot. Hopefully this is non deterministic, it might not be precise enough though.
+  // Nope, no randomness here. 24ms each time.
+
+  delay(25);
+  unsigned long seed = millis();
 
   Serial.begin(9600);
 
@@ -74,53 +78,6 @@ void demoMarker() {
   int i;
   for (i = 0; i < 3; i++) {
     flashWhite();
-  }
-}
-
-void flashWhite() {
-  int i;
-  for (i = 0; i < CHAIN2_SIZE; i++) {
-    strip1.setPixelColor(i, 128, 128, 128);
-  }
-  strip1.show();
-  delay(200);
-  strip1.clear();
-  strip1.show();
-  delay(250);
-}
-
-void randomTwinkle(int reps) {
-  uint8_t i, r;
-  for (r = 0; r < reps; r++) {
-    for (i = 0; i < CHAIN2_SIZE / 3; i++) {
-      strip1.setPixelColor(random(CHAIN2_SIZE), strip1.Color(random(0, 256), random(0, 256), random(0, 256)));
-      strip1.show();
-    }
-    delay(500);
-  }
-}
-
-void smoothTwinkle1(uint8_t reps) {
-  uint8_t num_pix = CHAIN2_SIZE / 3, r, p;
-  uint8_t pixels[num_pix];
-  uint8_t candidate;
-
-  for (r = 0; r < reps; r++) {
-    p = 0;
-    while (p < num_pix) {
-      candidate = random(0, CHAIN2_SIZE);
-      if (!contains(pixels, num_pix, candidate)) {
-        pixels[p] = candidate;
-        p++;
-      }
-    }
-
-    for (p = 0; p < num_pix; p++) {
-      strip1.setPixelColor(pixels[p], strip1.Color(random(0, 256), random(0, 256), random(0, 256)));
-    }
-
-    strip1.show();
-    delay(1000);
   }
 }
 
@@ -187,6 +144,52 @@ void smoothTwinkle2(uint8_t reps) {
   }
 }
 
+void flashWhite() {
+  int i;
+  for (i = 0; i < CHAIN2_SIZE; i++) {
+    strip1.setPixelColor(i, 128, 128, 128);
+  }
+  strip1.show();
+  delay(200);
+  strip1.clear();
+  strip1.show();
+  delay(250);
+}
+
+void randomTwinkle(int reps) {
+  uint8_t i, r;
+  for (r = 0; r < reps; r++) {
+    for (i = 0; i < CHAIN2_SIZE / 3; i++) {
+      strip1.setPixelColor(random(CHAIN2_SIZE), strip1.Color(random(0, 256), random(0, 256), random(0, 256)));
+      strip1.show();
+    }
+    delay(500);
+  }
+}
+
+void smoothTwinkle1(uint8_t reps) {
+  uint8_t num_pix = CHAIN2_SIZE / 3, r, p;
+  uint8_t pixels[num_pix];
+  uint8_t candidate;
+
+  for (r = 0; r < reps; r++) {
+    p = 0;
+    while (p < num_pix) {
+      candidate = random(0, CHAIN2_SIZE);
+      if (!contains(pixels, num_pix, candidate)) {
+        pixels[p] = candidate;
+        p++;
+      }
+    }
+
+    for (p = 0; p < num_pix; p++) {
+      strip1.setPixelColor(pixels[p], strip1.Color(random(0, 256), random(0, 256), random(0, 256)));
+    }
+
+    strip1.show();
+    delay(1000);
+  }
+}
 
 bool contains(uint8_t* array, uint8_t size, uint8_t val) {
   uint8_t i;
