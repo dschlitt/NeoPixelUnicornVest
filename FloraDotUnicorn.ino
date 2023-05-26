@@ -45,7 +45,7 @@ void setup() {
 }
 
 void loop() {
-  smoothTwinkle2(1);
+  smoothTwinkle2(1000);
 }
 
 void demoSequence() {
@@ -86,6 +86,12 @@ void smoothTwinkle2(uint8_t reps) {
   // TODO: refactor all uint8_t to int
   // TODO: use const where appropriate
 
+  // TODO: the transition between function calls in loop isn't smooth. Every pixel on is abruptly turned off and a new set are turned on.
+  // This is probably because I chose to start the sequence with pixels at a random brightness instead of off. 
+  // Interesting, if I set initial brightness to 0, all the lights brightness ramp is aligned and the pattern is more coordinated.
+
+
+
   uint8_t red_reduction = 4, blue_reduction = 1, green_reduction = 1;
 
   // variables
@@ -107,7 +113,7 @@ void smoothTwinkle2(uint8_t reps) {
 
   // initialize cycle
   for (p = 0; p < num_pix; p++) {
-    brightness[p] = random(1, brightness_steps);
+    brightness[p] = random(1, brightness_steps); // OPTION: 0, coordinates brightness ramps.
     reds[p] = random(0, 256);
     greens[p] = random(0, 256);
     blues[p] = random(0, 256);
