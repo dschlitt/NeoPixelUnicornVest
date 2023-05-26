@@ -14,7 +14,7 @@ Adafruit_NeoPixel strips[NUM_CHAINS];
 
 void setup() {
 
-  // Try to inject some true randomness, but this sucks. I've observed it return the same value each time.
+  // Try to inject some true randomness, but reading an unused PIN sucks. I've observed it return the same value each time.
   // See this stackoverflow for some ideas to increase the entropy
   // https://arduino.stackexchange.com/questions/22070/powering-from-3v-coin-cell-to-vcc-using-i-o-pin-as-supply-gnd/22081#22081
   uint8_t seed = analogRead(RANDOM_SEED_PIN);
@@ -41,6 +41,10 @@ void setup() {
 }
 
 void loop() {
+  smoothTwinkle2(1);
+}
+
+void demoSequence() {
   demoMarker();
 
   rainbowCycle(25, 3);
