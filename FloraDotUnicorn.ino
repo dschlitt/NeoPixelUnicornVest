@@ -36,11 +36,11 @@ void setup() {
   strips[1] = strip1;
 
   onboard.begin();
-  onboard.setBrightness(25);
+  onboard.setBrightness(255);
   onboard.show();  // Initialize all pixels to 'off'
 
   strip1.begin();
-  strip1.setBrightness(100);
+  strip1.setBrightness(255);
   strip1.show();  // Initialize all pixels to 'off'
 }
 
@@ -87,12 +87,12 @@ void smoothTwinkle2(uint8_t reps) {
   // TODO: use const where appropriate
 
   // TODO: the transition between function calls in loop isn't smooth. Every pixel on is abruptly turned off and a new set are turned on.
-  // This is probably because I chose to start the sequence with pixels at a random brightness instead of off. 
+  // This is probably because I chose to start the sequence with pixels at a random brightness instead of off.
   // Interesting, if I set initial brightness to 0, all the lights brightness ramp is aligned and the pattern is more coordinated.
 
 
 
-  uint8_t red_reduction = 4, blue_reduction = 1, green_reduction = 1;
+  uint8_t red_limit = 255, blue_limit = 127, green_limit = 63;
 
   // variables
   uint8_t brightness_steps = 100;
@@ -100,6 +100,7 @@ void smoothTwinkle2(uint8_t reps) {
   uint8_t num_pix = CHAIN2_SIZE / 3, r, p, i, candidate;
   uint8_t pixels[num_pix];
   uint8_t brightness[num_pix], reds[num_pix], greens[num_pix], blues[num_pix];
+  uint8_t o_r, o_g, o_b, o_br;  //onboard red, green, blue, brightness
 
   // choose pixels to participate in cycle
   p = 0;
@@ -113,17 +114,22 @@ void smoothTwinkle2(uint8_t reps) {
 
   // initialize cycle
   for (p = 0; p < num_pix; p++) {
-    brightness[p] = random(1, brightness_steps); // OPTION: 0, coordinates brightness ramps.
-    reds[p] = random(0, 256);
-    greens[p] = random(0, 256);
-    blues[p] = random(0, 256);
+    brightness[p] = random(0, brightness_steps);  // OPTION: 0, coordinates brightness ramps.
+    reds[p] = random(0, red_limit);
+    greens[p] = random(0, green_limit);
+    blues[p] = random(0, blue_limit);
   }
+
+  o_r = random(0, red_limit);
+  o_g = random(0, green_limit);
+  o_b = random(0, blue_limit);
+  o_br = random(0, brightness_steps);
 
   int pb;  // pixel specific brightness factor
   for (i = 0; i < brightness_steps * reps; i++) {
     for (p = 0; p < num_pix; p++) {
       pb = brightness[p];
-      strip1.setPixelColor(pixels[p], reds[p] * pb / bs / red_reduction, greens[p] * pb / bs / blue_reduction, blues[p] * pb / bs / green_reduction);
+      strip1.setPixelColor(pixels[p], reds[p] * pb / bs, greens[p] * pb / bs, blues[p] * pb / bs);
       if (pb == 0) {
         // transition to new active pixel
         candidate = random(0, CHAIN2_SIZE);
@@ -145,6 +151,22 @@ void smoothTwinkle2(uint8_t reps) {
       }
     }
 
+    onboard.setPixelColor(0, o_r * o_br / bs, o_g * o_br / bs, o_b * o_br / bs);
+    // set next onboard brightness
+    if (o_br == 0) {
+      o_r = random(0, red_limit);
+      o_g = random(0, green_limit);
+      o_b = random(0, blue_limit);
+      o_br = 1;
+    } else if (o_br == 99) {
+      o_br = 98;
+    } else if (o_br % 2 == 0) {
+      o_br = o_br - 2;
+    } else {
+      o_br = o_br + 2;
+    }
+
+    onboard.show();
     strip1.show();
     delay(20);
   }
