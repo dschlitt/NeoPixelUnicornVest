@@ -12,13 +12,14 @@ Adafruit_NeoPixel strip1 = Adafruit_NeoPixel(CHAIN2_SIZE, PIN2, NEO_GRB + NEO_KH
 
 Adafruit_NeoPixel strips[NUM_CHAINS];
 
-void setup() {
+void setup() { // Arduino standard, called once after turned on
 
   // Try to inject some true randomness, but reading an unused PIN sucks. I've observed it return the same value each time.
   // See this stackoverflow for some ideas to increase the entropy
   // https://arduino.stackexchange.com/questions/22070/powering-from-3v-coin-cell-to-vcc-using-i-o-pin-as-supply-gnd/22081#22081
   // 2nd attempt is just getting the number of millis since boot. Hopefully this is non deterministic, it might not be precise enough though.
   // Nope, no randomness here. 24ms each time.
+  
 
   delay(25);
   unsigned long seed = millis();
@@ -44,42 +45,142 @@ void setup() {
   strip1.show();  // Initialize all pixels to 'off'
 }
 
-void loop() {
-  smoothTwinkle2(1000);
+void loop() { // Arduino standard, called repeatedly while on
+  twinkelSparkle(1000);
 }
 
-void demoSequence() {
-  demoMarker();
+void twinkelSparkle(uint8_t reps) {
+  // Function config
+  // TODO: refactor all uint8_t to int
+  // TODO: use const where appropriate
 
-  rainbowCycle(25, 3);
+  // TODO: the transition between function calls in loop isn't smooth. Every pixel on is abruptly turned off and a new set are turned on.
+  // This is probably because I chose to start the sequence with pixels at a random brightness instead of off.
+  // Interesting, if I set initial brightness to 0, all the lights brightness ramp is aligned and the pattern is more coordinated.
 
-  demoMarker();
 
-  randomTwinkle(25);
 
-  demoMarker();
+  uint8_t red_limit = 255, blue_limit = 31, green_limit = 1;
 
-  smoothTwinkle1(25);
+  // variables
+  uint8_t brightness_steps = 100;
+  uint8_t bs = brightness_steps;
+  uint8_t num_pix = CHAIN2_SIZE / 3, r, p, i, candidate;
+  uint8_t pixels[num_pix];
+  uint8_t brightness[num_pix], reds[num_pix], greens[num_pix], blues[num_pix];
+  uint8_t o_r, o_g, o_b, o_br;  //onboard red, green, blue, brightness
 
-  demoMarker();
+  // choose pixels to participate in cycle
+  p = 0;
+  while (p < num_pix) {
+    candidate = random(0, CHAIN2_SIZE);
+    if (!contains(pixels, num_pix, candidate)) {
+      pixels[p] = candidate;
+      p++;
+    }
+  }
 
-  smoothTwinkle2(5);
+  // initialize cycle
+  for (p = 0; p < num_pix; p++) {
+    brightness[p] = random(0, brightness_steps);  // OPTION: 0, coordinates brightness ramps.
+    reds[p] = random(0, red_limit);
+    greens[p] = random(0, green_limit);
+    blues[p] = random(0, blue_limit);
+  }
 
-  demoMarker();
+  o_r = random(0, red_limit);
+  o_g = random(0, green_limit);
+  o_b = random(0, blue_limit);
+  o_br = random(0, brightness_steps);
 
-  demoMarker();
-}
+  int pb;  // pixel specific brightness factor
+  for (i = 0; i < brightness_steps * reps; i++) {
+    for (p = 0; p < num_pix; p++) {
+      pb = brightness[p];
+      strip1.setPixelColor(pixels[p], reds[p] * pb / bs, greens[p] * pb / bs, blues[p] * pb / bs);
+      if (pb == 0) {
+        // transition to new active pixel
+        candidate = random(0, CHAIN2_SIZE);
+        while (contains(pixels, num_pix, candidate)) {
+          candidate = random(0, CHAIN2_SIZE);
+        }
+        pixels[p] = candidate;
+      }
 
-void demoMarker() {
-  strip1.clear();
-  strip1.show();
-  delay(1000);
+      // set next brightness
+      if (pb == 0) {
+        brightness[p] = 1;
+      } else if (pb == 99) {
+        brightness[p] = 98;
+      } else if (pb % 2 == 0) {
+        brightness[p] = pb - 2;
+      } else {
+        brightness[p] = pb + 2;
+      }
+    }
 
-  int i;
-  for (i = 0; i < 3; i++) {
-    flashWhite();
+    onboard.setPixelColor(0, o_r * o_br / bs, o_g * o_br / bs, o_b * o_br / bs);
+    // set next onboard brightness
+    if (o_br == 0) {
+      o_r = random(0, red_limit);
+      o_g = random(0, green_limit);
+      o_b = random(0, blue_limit);
+      o_br = 1;
+    } else if (o_br == 99) {
+      o_br = 98;
+    } else if (o_br % 2 == 0) {
+      o_br = o_br - 2;
+    } else {
+      o_br = o_br + 2;
+    }
+
+    // Break out of twinkle and sparkle occassionally. 
+    // Totally inspired by the Myan Warrior. Rest in power.
+
+    // What's the math behind this? I want to sparkle about once or twice in a 5 minute period.
+    // fuck it, this is good enough. 
+    if (random(0,100000) > 99990) {
+      sparkle();
+    }
+
+    onboard.show();
+    strip1.show();
+    delay(10);
   }
 }
+
+void sparkle() {
+  int i, s, brightness;
+  int sparkleDuration = 5;
+  int brightnessLimit = 64; // MAX 256, don't be a bright wad.
+  for (s = 0; s < sparkleDuration; s++) {
+    for (i = 0; i < CHAIN2_SIZE; i++) {
+      brightness = random(0, brightnessLimit);
+      strip1.setPixelColor(i, brightness, brightness, brightness);
+    }
+
+    strip1.show();
+    delay(50);
+    strip1.clear();
+    strip1.show();
+    delay(10);
+  }
+}
+
+bool contains(uint8_t* array, uint8_t size, uint8_t val) {
+  uint8_t i;
+  for (i = 0; i < size; i++) {
+    if ((array[i]) == val) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/*
+  UNUSED CODE BELOW
+*/
 
 void smoothTwinkle2(uint8_t reps) {
   // Function config
@@ -92,7 +193,7 @@ void smoothTwinkle2(uint8_t reps) {
 
 
 
-  uint8_t red_limit = 255, blue_limit = 127, green_limit = 63;
+  uint8_t red_limit = 255, blue_limit = 31, green_limit = 1;
 
   // variables
   uint8_t brightness_steps = 100;
@@ -168,7 +269,40 @@ void smoothTwinkle2(uint8_t reps) {
 
     onboard.show();
     strip1.show();
-    delay(20);
+    delay(10);
+  }
+}
+
+void demoSequence() {
+  demoMarker();
+
+  rainbowCycle(25, 3);
+
+  demoMarker();
+
+  randomTwinkle(25);
+
+  demoMarker();
+
+  smoothTwinkle1(25);
+
+  demoMarker();
+
+  smoothTwinkle2(5);
+
+  demoMarker();
+
+  demoMarker();
+}
+
+void demoMarker() {
+  strip1.clear();
+  strip1.show();
+  delay(1000);
+
+  int i;
+  for (i = 0; i < 3; i++) {
+    flashWhite();
   }
 }
 
@@ -217,17 +351,6 @@ void smoothTwinkle1(uint8_t reps) {
     strip1.show();
     delay(1000);
   }
-}
-
-bool contains(uint8_t* array, uint8_t size, uint8_t val) {
-  uint8_t i;
-  for (i = 0; i < size; i++) {
-    if ((array[i]) == val) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 // Slightly different, this makes the rainbow equally distributed throughout
