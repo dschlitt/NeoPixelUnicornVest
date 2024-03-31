@@ -20,17 +20,16 @@ void setup() { // Arduino standard, called once after turned on
   // 2nd attempt is just getting the number of millis since boot. Hopefully this is non deterministic, it might not be precise enough though.
   // Nope, no randomness here. 24ms each time.
   
-
-  delay(25);
-  unsigned long seed = millis();
-
   Serial.begin(9600);
 
   // Required so serial monitor can be initialized before the first message is sent.
-  delay(1000);
-  Serial.print("Random Seed: ");
-  Serial.println(seed);
+  // Uncomment for debugging
+  // delay(1000);
 
+  // Serial.print("Random Seed: ");
+  // Serial.println(seed);
+  
+  unsigned long seed = millis();
   randomSeed(seed);
 
   strips[0] = onboard;
@@ -38,7 +37,7 @@ void setup() { // Arduino standard, called once after turned on
 
   onboard.begin();
   onboard.setBrightness(255);
-  onboard.show();  // Initialize all pixels to 'off'
+  onboard.show();  // Initialize pixel to 'off'
 
   strip1.begin();
   strip1.setBrightness(255);
@@ -46,26 +45,27 @@ void setup() { // Arduino standard, called once after turned on
 }
 
 void loop() { // Arduino standard, called repeatedly while on
-  twinkelSparkle(1000);
+  // 2023 Rocky + Burning Man pattern
+  twinkelSparkle();
 }
 
-void twinkelSparkle(uint8_t reps) {
+void twinkelSparkle() {
   // Function config
-  // TODO: refactor all uint8_t to int
   // TODO: use const where appropriate
 
   // TODO: the transition between function calls in loop isn't smooth. Every pixel on is abruptly turned off and a new set are turned on.
   // This is probably because I chose to start the sequence with pixels at a random brightness instead of off.
-  // Interesting, if I set initial brightness to 0, all the lights brightness ramp is aligned and the pattern is more coordinated.
+
+  // 2023 pink hue
+  // uint8_t red_limit = 255, blue_limit = 31, green_limit = 1;
 
 
+  // Adjust red, blue, and green limit to get different primary hue
+  uint8_t red_limit = 255, blue_limit = 255, green_limit = 1;
 
-  uint8_t red_limit = 255, blue_limit = 31, green_limit = 1;
-
-  // variables
-  uint8_t brightness_steps = 100;
-  uint8_t bs = brightness_steps;
-  uint8_t num_pix = CHAIN2_SIZE / 3, r, p, i, candidate;
+  const uint8_t brightness_steps = 100;
+  const uint8_t bs = brightness_steps; // abbreviation for code brevity
+  uint8_t num_pix = CHAIN2_SIZE / 3, r, p, candidate;
   uint8_t pixels[num_pix];
   uint8_t brightness[num_pix], reds[num_pix], greens[num_pix], blues[num_pix];
   uint8_t o_r, o_g, o_b, o_br;  //onboard red, green, blue, brightness
@@ -94,7 +94,7 @@ void twinkelSparkle(uint8_t reps) {
   o_br = random(0, brightness_steps);
 
   int pb;  // pixel specific brightness factor
-  for (i = 0; i < brightness_steps * reps; i++) {
+  while(true) {
     for (p = 0; p < num_pix; p++) {
       pb = brightness[p];
       strip1.setPixelColor(pixels[p], reds[p] * pb / bs, greens[p] * pb / bs, blues[p] * pb / bs);
