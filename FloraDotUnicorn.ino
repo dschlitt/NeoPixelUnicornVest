@@ -12,14 +12,15 @@ Adafruit_NeoPixel strip1 = Adafruit_NeoPixel(CHAIN2_SIZE, PIN2, NEO_GRB + NEO_KH
 
 Adafruit_NeoPixel strips[NUM_CHAINS];
 
-void setup() { // Arduino standard, called once after turned on
+// Arduino standard, called once after turned on
+void setup() { 
 
   // Try to inject some true randomness, but reading an unused PIN sucks. I've observed it return the same value each time.
   // See this stackoverflow for some ideas to increase the entropy
   // https://arduino.stackexchange.com/questions/22070/powering-from-3v-coin-cell-to-vcc-using-i-o-pin-as-supply-gnd/22081#22081
   // 2nd attempt is just getting the number of millis since boot. Hopefully this is non deterministic, it might not be precise enough though.
   // Nope, no randomness here. 24ms each time.
-  
+
   Serial.begin(9600);
 
   // Required so serial monitor can be initialized before the first message is sent.
@@ -28,7 +29,7 @@ void setup() { // Arduino standard, called once after turned on
 
   // Serial.print("Random Seed: ");
   // Serial.println(seed);
-  
+
   unsigned long seed = millis();
   randomSeed(seed);
 
@@ -44,7 +45,8 @@ void setup() { // Arduino standard, called once after turned on
   strip1.show();  // Initialize all pixels to 'off'
 }
 
-void loop() { // Arduino standard, called repeatedly while on
+// Arduino standard, called repeatedly while on
+void loop() {  
   // 2023 Rocky + Burning Man pattern
   twinkelSparkle();
 }
@@ -64,13 +66,14 @@ void twinkelSparkle() {
   uint8_t red_limit = 255, blue_limit = 255, green_limit = 1;
 
   const uint8_t brightness_steps = 100;
-  const uint8_t bs = brightness_steps; // abbreviation for code brevity
+  const uint8_t bs = brightness_steps;  // abbreviation for code brevity
   uint8_t num_pix = CHAIN2_SIZE / 3, r, p, candidate;
+  uint8_t pb;  // pixel specific brightness factor
   uint8_t pixels[num_pix];
   uint8_t brightness[num_pix], reds[num_pix], greens[num_pix], blues[num_pix];
   uint8_t o_r, o_g, o_b, o_br;  //onboard red, green, blue, brightness
 
-  // choose pixels to participate in cycle
+  // choose initial pixels
   p = 0;
   while (p < num_pix) {
     candidate = random(0, CHAIN2_SIZE);
@@ -93,13 +96,15 @@ void twinkelSparkle() {
   o_b = random(0, blue_limit);
   o_br = random(0, brightness_steps);
 
-  int pb;  // pixel specific brightness factor
-  while(true) {
+  while (true) {
+    // for each pixel
     for (p = 0; p < num_pix; p++) {
       pb = brightness[p];
       strip1.setPixelColor(pixels[p], reds[p] * pb / bs, greens[p] * pb / bs, blues[p] * pb / bs);
+
       if (pb == 0) {
-        // transition to new active pixel
+        // transition to new pixel, making sure it's not already lit
+
         candidate = random(0, CHAIN2_SIZE);
         while (contains(pixels, num_pix, candidate)) {
           candidate = random(0, CHAIN2_SIZE);
@@ -120,12 +125,18 @@ void twinkelSparkle() {
     }
 
     onboard.setPixelColor(0, o_r * o_br / bs, o_g * o_br / bs, o_b * o_br / bs);
-    // set next onboard brightness
+
+    // set next onboard pixel brightness
     if (o_br == 0) {
-      o_r = random(0, red_limit);
-      o_g = random(0, green_limit);
-      o_b = random(0, blue_limit);
-      o_br = 1;
+      // stay off for random amount of time
+      if (random(0, 100) > 97) {
+        // re light and transition to new color
+        o_r = random(0, red_limit);
+        o_g = random(0, green_limit);
+        o_b = random(0, blue_limit);
+        o_br = 1;
+      }
+
     } else if (o_br == 99) {
       o_br = 98;
     } else if (o_br % 2 == 0) {
@@ -134,12 +145,13 @@ void twinkelSparkle() {
       o_br = o_br + 2;
     }
 
-    // Break out of twinkle and sparkle occassionally. 
+    // Break out of twinkle and sparkle occassionally.
     // Totally inspired by the Myan Warrior. Rest in power.
 
-    // What's the math behind this? I want to sparkle about once or twice in a 5 minute period.
-    // fuck it, this is good enough. 
-    if (random(0,100000) > 99990) {
+    // What's the math behind this? 
+    // I want to sparkle about once or twice in a 5 minute period.
+    // Forget that, this is good enough.
+    if (random(0, 100000) > 99990) {
       sparkle();
     }
 
@@ -152,7 +164,7 @@ void twinkelSparkle() {
 void sparkle() {
   int i, s, brightness;
   int sparkleDuration = 5;
-  int brightnessLimit = 64; // MAX 256, don't be a bright wad.
+  int brightnessLimit = 64;  // MAX 256, don't be a bright wad.
   for (s = 0; s < sparkleDuration; s++) {
     for (i = 0; i < CHAIN2_SIZE; i++) {
       brightness = random(0, brightnessLimit);
