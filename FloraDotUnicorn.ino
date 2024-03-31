@@ -161,6 +161,7 @@ void twinkelSparkle() {
   }
 }
 
+// Make all the pixels sparkle for a moment
 void sparkle() {
   int i, s, brightness;
   int sparkleDuration = 5;
@@ -194,11 +195,31 @@ bool contains(uint8_t* array, uint8_t size, uint8_t val) {
   UNUSED CODE BELOW
 */
 
+void demoSequence() {
+  demoMarker();
+
+  rainbowCycle(25, 3);
+
+  demoMarker();
+
+  randomTwinkle(25);
+
+  demoMarker();
+
+  smoothTwinkle1(25);
+
+  demoMarker();
+
+  smoothTwinkle2(5);
+
+  demoMarker();
+
+  demoMarker();
+}
+
 void smoothTwinkle2(uint8_t reps) {
   // Function config
-  // TODO: refactor all uint8_t to int
-  // TODO: use const where appropriate
-
+  
   // TODO: the transition between function calls in loop isn't smooth. Every pixel on is abruptly turned off and a new set are turned on.
   // This is probably because I chose to start the sequence with pixels at a random brightness instead of off.
   // Interesting, if I set initial brightness to 0, all the lights brightness ramp is aligned and the pattern is more coordinated.
@@ -283,28 +304,6 @@ void smoothTwinkle2(uint8_t reps) {
     strip1.show();
     delay(10);
   }
-}
-
-void demoSequence() {
-  demoMarker();
-
-  rainbowCycle(25, 3);
-
-  demoMarker();
-
-  randomTwinkle(25);
-
-  demoMarker();
-
-  smoothTwinkle1(25);
-
-  demoMarker();
-
-  smoothTwinkle2(5);
-
-  demoMarker();
-
-  demoMarker();
 }
 
 void demoMarker() {
